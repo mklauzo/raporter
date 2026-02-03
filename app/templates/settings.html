@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Ustawienia - Raporter{% endblock %}
+
+{% block content %}
+<h2><i class="bi bi-gear"></i> Ustawienia</h2>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-lock"></i> Zmiana hasla
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="change_password">
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Obecne haslo</label>
+                        <input type="password" class="form-control" id="current_password" name="current_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">Nowe haslo</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8">
+                        <div class="form-text">Minimum 8 znakow</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Potwierdz nowe haslo</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> Zmien haslo
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-key"></i> Klucz SSH
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Status:</strong>
+                    {% if ssh_key_configured %}
+                        <span class="badge bg-success"><i class="bi bi-check-circle"></i> Skonfigurowany</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle"></i> Nie skonfigurowany</span>
+                    {% endif %}
+                </div>
+
+                <form method="POST" enctype="multipart/form-data" class="mb-3">
+                    <input type="hidden" name="action" value="upload_ssh_key">
+                    <div class="mb-3">
+                        <label for="ssh_key" class="form-label">Klucz prywatny SSH</label>
+                        <input type="file" class="form-control" id="ssh_key" name="ssh_key" accept=".pem,.key,id_rsa,id_ed25519">
+                        <div class="form-text">Wybierz plik klucza prywatnego (np. id_rsa, id_ed25519)</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Zapisz klucz
+                    </button>
+                </form>
+
+                {% if ssh_key_configured %}
+                <form method="POST" onsubmit="return confirm('Czy na pewno chcesz usunac klucz SSH?')">
+                    <input type="hidden" name="action" value="delete_ssh_key">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Usun klucz
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

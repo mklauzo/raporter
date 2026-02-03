@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Historia raportow - Raporter{% endblock %}
+
+{% block content %}
+<h2><i class="bi bi-clock-history"></i> Historia raportow</h2>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <form method="GET" class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label for="server_id" class="col-form-label">Filtruj po serwerze:</label>
+            </div>
+            <div class="col-auto">
+                <select class="form-select" id="server_id" name="server_id" onchange="this.form.submit()">
+                    <option value="">Wszystkie serwery</option>
+                    {% for server in servers %}
+                    <option value="{{ server.id }}" {% if server.id == selected_server_id %}selected{% endif %}>
+                        {{ server.name }} ({{ server.ip_address }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+    <div class="card-body">
+        {% if reports.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Serwer</th>
+                        <th>IP</th>
+                        <th>Status</th>
+                        <th class="text-end">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports.items %}
+                    <tr>
+                        <td>{{ report.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td><strong>{{ report.server.name }}</strong></td>
+                        <td><code>{{ report.server.ip_address }}</code></td>
+                        <td>
+                            {% if report.status == 'success' %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Sukces</span>
+                            {% else %}
+                            <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Blad</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-primary btn-sm" onclick="viewReport({{ report.id }})">
+                                <i class="bi bi-eye"></i> Zobacz
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if reports.pages > 1 %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if reports.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('reports.history', page=reports.prev_num, server_id=selected_server_id) }}">Poprzednia</a>
+                </li>
+                {% endif %}
+
+                {% for page in reports.iter_pages() %}
+                    {% if page %}
+                    <li class="page-item {% if page == reports.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('reports.history', page=page, server_id=selected_server_id) }}">{{ page }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if reports.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('reports.history', page=reports.next_num, server_id=selected_server_id) }}">Nastepna</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info mb-0">
+            <i class="bi bi-info-circle"></i> Brak raportow w historii.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

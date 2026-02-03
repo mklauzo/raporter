@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Raporter{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('servers.dashboard') }}">
+                <i class="bi bi-server"></i> Raporter
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('servers.dashboard') }}">
+                            <i class="bi bi-house"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reports.history') }}">
+                            <i class="bi bi-clock-history"></i> Historia raportow
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.settings') }}">
+                            <i class="bi bi-gear"></i> Ustawienia
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <span class="nav-link text-light">
+                            <i class="bi bi-person"></i> {{ current_user.username }}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                            <i class="bi bi-box-arrow-right"></i> Wyloguj
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Report Modal -->
+    <div class="modal fade" id="reportModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Raport serwera</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="reportLoading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Generowanie...</span>
+                        </div>
+                        <p class="mt-2">Generowanie raportu...</p>
+                    </div>
+                    <div id="reportContent" style="display: none;">
+                        <div class="alert" id="reportStatus"></div>
+                        <pre id="reportText" class="bg-dark text-light p-3 rounded" style="max-height: 500px; overflow-y: auto;"></pre>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function generateReport(serverId, serverName) {
+            const modal = new bootstrap.Modal(document.getElementById('reportModal'));
+            const loading = document.getElementById('reportLoading');
+            const content = document.getElementById('reportContent');
+            const status = document.getElementById('reportStatus');
+            const text = document.getElementById('reportText');
+
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            modal.show();
+
+            fetch(`/reports/generate/${serverId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+
+                if (data.success) {
+                    status.className = 'alert alert-success';
+                    status.textContent = `Raport dla "${serverName}" wygenerowany pomyslnie`;
+                } else {
+                    status.className = 'alert alert-danger';
+                    status.textContent = `Blad podczas generowania raportu dla "${serverName}"`;
+                }
+                text.textContent = data.content;
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                status.className = 'alert alert-danger';
+                status.textContent = 'Blad polaczenia z serwerem';
+                text.textContent = error.message;
+            });
+        }
+
+        function viewReport(reportId) {
+            const modal = new bootstrap.Modal(document.getElementById('reportModal'));
+            const loading = document.getElementById('reportLoading');
+            const content = document.getElementById('reportContent');
+            const status = document.getElementById('reportStatus');
+            const text = document.getElementById('reportText');
+
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            modal.show();
+
+            fetch(`/reports/${reportId}`)
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+
+                if (data.status === 'success') {
+                    status.className = 'alert alert-success';
+                    status.textContent = `Raport: ${data.server_name} (${data.server_ip}) - ${data.created_at}`;
+                } else {
+                    status.className = 'alert alert-danger';
+                    status.textContent = `Raport z bledem: ${data.server_name} (${data.server_ip}) - ${data.created_at}`;
+                }
+                text.textContent = data.content;
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                status.className = 'alert alert-danger';
+                status.textContent = 'Blad ladowania raportu';
+                text.textContent = error.message;
+            });
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

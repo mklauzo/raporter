@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}{% if server %}Edytuj serwer{% else %}Dodaj serwer{% endif %} - Raporter{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-server"></i> {% if server %}Edytuj serwer{% else %}Dodaj nowy serwer{% endif %}
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nazwa serwera</label>
+                        <input type="text" class="form-control" id="name" name="name"
+                               value="{{ server.name if server else '' }}" required>
+                        <div class="form-text">Przyjazna nazwa do identyfikacji serwera</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ip_address" class="form-label">Adres IP</label>
+                        <input type="text" class="form-control" id="ip_address" name="ip_address"
+                               value="{{ server.ip_address if server else '' }}" required
+                               pattern="^[a-zA-Z0-9.-]+$">
+                        <div class="form-text">Adres IP lub hostname serwera</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ssh_user" class="form-label">Uzytkownik SSH</label>
+                            <input type="text" class="form-control" id="ssh_user" name="ssh_user"
+                                   value="{{ server.ssh_user if server else 'root' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ssh_port" class="form-label">Port SSH</label>
+                            <input type="number" class="form-control" id="ssh_port" name="ssh_port"
+                                   value="{{ server.ssh_port if server else 22 }}" min="1" max="65535">
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> {% if server %}Zapisz zmiany{% else %}Dodaj serwer{% endif %}
+                        </button>
+                        <a href="{{ url_for('servers.dashboard') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-lg"></i> Anuluj
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
