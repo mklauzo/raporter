@@ -74,4 +74,40 @@
         </div>
     </div>
 </div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-download"></i> Export bazy danych
+            </div>
+            <div class="card-body">
+                <p class="card-text">Pobierz kopie zapasowa calej bazy danych (serwery, raporty, ustawienia) w formacie JSON.</p>
+                <a href="{{ url_for('auth.export_db') }}" class="btn btn-primary">
+                    <i class="bi bi-download"></i> Pobierz backup
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-upload"></i> Import bazy danych
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('auth.import_db') }}" enctype="multipart/form-data" onsubmit="return confirm('UWAGA: Import nadpisze wszystkie obecne dane w bazie. Czy kontynuowac?')">
+                    <div class="mb-3">
+                        <label for="import_file" class="form-label">Plik backup JSON</label>
+                        <input type="file" class="form-control" id="import_file" name="import_file" accept=".json" required>
+                        <div class="form-text">Wybierz plik wczesniej wyeksportowany z Raportera</div>
+                    </div>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-upload"></i> Importuj
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

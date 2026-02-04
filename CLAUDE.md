@@ -34,36 +34,13 @@ docker-compose logs -f web
 
 ## Architecture
 
-### Application Structure
-
-```
-app/
-├── __init__.py      # Flask app factory, creates default user on startup
-├── config.py        # Configuration from environment variables
-├── models.py        # SQLAlchemy models: User, Server, Report, Settings
-├── routes/
-│   ├── auth.py      # Login, logout, settings (password, SSH key)
-│   ├── servers.py   # Server CRUD operations
-│   └── reports.py   # Report generation and history
-└── services/
-    ├── crypto.py    # Fernet encryption for SSH keys
-    └── ssh_service.py  # Paramiko SSH connections
-```
-
 ### Key Components
 
-**SSH Service** (`services/ssh_service.py`):
-- `SSHService` class is a context manager for SSH connections
-- Supports RSA, Ed25519, ECDSA key types
-- `generate_report(server)` uploads and executes `raport_servera.sh` on remote server
-
-**Encryption** (`services/crypto.py`):
-- SSH private keys are encrypted with Fernet before storing in database
-- Key derived from Flask's SECRET_KEY via SHA256
-
-**Models** (`models.py`):
-- `Server.last_report` property returns most recent report for dashboard display
-- `Settings.get(key)` / `Settings.set(key, value)` for key-value config storage
+- **App factory** (`app/__init__.py`): `create_app()` registers blueprints (`auth`, `servers`, `reports`), initializes extensions, and creates the default user on first run.
+- **Routes** (`app/routes/`): Three blueprints — `auth.py` (login/logout/settings), `servers.py` (server CRUD + dashboard), `reports.py` (generation + history).
+- **SSH Service** (`app/services/ssh_service.py`): Context manager class. Connects via Paramiko, uploads `raport_servera.sh` to `/tmp/` on remote server, executes it (120s timeout), returns output. Supports RSA, Ed25519, ECDSA keys.
+- **Encryption** (`app/services/crypto.py`): Fernet encryption for SSH private keys stored in the `settings` table. Key derived from Flask's `SECRET_KEY` via SHA256.
+- **Models** (`app/models.py`): `User`, `Server`, `Report`, `Settings`. Notable: `Server.last_report` property returns most recent report; `Settings.get(key)`/`Settings.set(key, value)` for key-value config.
 
 ### Request Flow
 
@@ -72,27 +49,31 @@ app/
 3. "Generate Report" → POST to `/reports/generate/<id>` → SSH connection → execute script → store result → return JSON
 4. Report displayed in Bootstrap modal via JavaScript
 
+### Database Schema (MariaDB 10.11)
+
+- **users**: `id`, `username` (unique), `password_hash`, `created_at`
+- **servers**: `id`, `name`, `ip_address`, `ssh_user` (default 'root'), `ssh_port` (default 22), `created_at`
+- **reports**: `id`, `server_id` (FK → servers), `content` (text), `status` (enum: 'success'|'error'), `created_at`
+- **settings**: `id`, `key` (unique), `value`, `updated_at` — used for storing encrypted SSH key
+
+Schema defined in `init_db.sql`; default user created by Flask app on startup.
+
 ### Docker Setup
 
-- `web` service: Flask app on port 5000
-- `db` service: MariaDB 10.11 with health check
-- `raport_servera.sh` mounted read-only into container
+- `web` service: Flask app on port 5000, runs as non-root `appuser`
+- `db` service: MariaDB 10.11 with health check, persistent `db_data` volume
+- `raport_servera.sh` mounted read-only into container at `/app/raport_servera.sh`
 - Database initialized from `init_db.sql`
-
-## Important Files
-
-- `raport_servera.sh` - Bash script executed on remote servers, checks: Plesk version, disk usage, load, mail queue, updates, logs, firewall, Fail2Ban, ClamAV (if running)
-- `init_db.sql` - Database schema (tables created here, user created by Flask)
-- `.env.example` - Required environment variables template
 
 ## Report Script Sections
 
 The `raport_servera.sh` generates reports with these sections:
-1. Plesk version
-2. Disk usage
-3. Load & uptime
-4. Mail queue (Postfix)
-5. Package updates
-6. Log analysis (syslog, web errors, MySQL)
-7. Security (Firewall, Fail2Ban jails)
-8. ClamAV antivirus (only if clamscan is running - shows scan summary, starts new scan in screen/background)
+1. Server metrics (IP, hostname, OS, kernel, hardware vendor/model via hostnamectl)
+2. Plesk version
+3. Disk usage
+4. Load & uptime
+5. Mail queue (Postfix)
+6. Package updates
+7. Log analysis (syslog, web errors, MySQL)
+8. Security (Firewall, Fail2Ban jails)
+9. ClamAV antivirus (only if clamscan is running - shows scan summary, starts new scan in screen/background)

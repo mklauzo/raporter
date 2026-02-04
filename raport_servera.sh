@@ -8,29 +8,41 @@ MIESIAC_TEMU=$(date --date='1 month ago' '+%b')
 
 echo "=== RAPORT STANU SERWERA - $DATA_RAPORTU ==="
 
-# 1. Wersja Plesk
-echo -e "\n1. Plesk Version:"
+# 1. Metryka serwera
+echo -e "\n1. Metryka serwera:"
+echo "IP: $(hostname -I | awk '{print $1}')"
+echo "Hostname: $(hostnamectl --static 2>/dev/null || hostname)"
+echo "System: $(hostnamectl 2>/dev/null | grep 'Operating System' | sed 's/.*: //')"
+echo "Kernel: $(hostnamectl 2>/dev/null | grep 'Kernel' | sed 's/.*: //')"
+VENDOR=$(hostnamectl 2>/dev/null | grep 'Hardware Vendor' | sed 's/.*: //')
+echo "Vendor: $VENDOR"
+if [ "$VENDOR" != "QEMU" ]; then
+    echo "Model: $(hostnamectl 2>/dev/null | grep 'Hardware Model' | sed 's/.*: //')"
+fi
+
+# 2. Wersja Plesk
+echo -e "\n2. Plesk Version:"
 plesk -v | grep "Product version"
 
-# 2. Dysk
-echo -e "\n2. Zużycie dysku:"
+# 3. Dysk
+echo -e "\n3. Zużycie dysku:"
 df -h | grep '^/dev/' | awk '{ print $5 " (" $1 ")" }'
 
-# 3. Load Average & Uptime
-echo -e "\n3. Obciążenie i Uptime:"
+# 4. Load Average & Uptime
+echo -e "\n4. Obciążenie i Uptime:"
 uptime
 
-# 4. Kolejka poczty
-echo -e "\n4. Kolejka poczty (Postfix):"
+# 5. Kolejka poczty
+echo -e "\n5. Kolejka poczty (Postfix):"
 mailq | tail -n 1
 
-# 5. Aktualizacje pakietów
-echo -e "\n5. Pakiety do aktualizacji:"
+# 6. Aktualizacje pakietów
+echo -e "\n6. Pakiety do aktualizacji:"
 UPDATES=$(apt list --upgradable 2>/dev/null | grep -v "Listing..." | wc -l)
 if [ "$UPDATES" -gt 0 ]; then echo "$UPDATES pakietów do aktualizacji"; else echo "Brak aktualizacji"; fi
 
-# 6. ANALIZA LOGÓW (Ostatni miesiąc)
-echo -e "\n6. ANALIZA POTENCJALNYCH PROBLEMÓW (LOGI):"
+# 7. ANALIZA LOGÓW (Ostatni miesiąc)
+echo -e "\n7. ANALIZA POTENCJALNYCH PROBLEMÓW (LOGI):"
 
 # --- Logi systemowe ---
 echo "--- Błędy w logach systemowych (/var/log/syslog) ---"
@@ -47,8 +59,8 @@ echo -e "\n--- Problemy z bazą danych (MySQL) ---"
 DB_ERRORS=$(tail -n 20 /var/log/mysql/error.log 2>/dev/null | grep -Ei "error|locked|crash")
 if [ -z "$DB_ERRORS" ]; then echo "BRAK BŁĘDÓW"; else echo "$DB_ERRORS"; fi
 
-# 7. Bezpieczeństwo
-echo -e "\n7. Bezpieczeństwo (Firewall & Fail2Ban):"
+# 8. Bezpieczeństwo
+echo -e "\n8. Bezpieczeństwo (Firewall & Fail2Ban):"
 
 # --- Sprawdzenie Plesk Firewall (Komenda Extension) ---
 echo -n "Plesk Firewall Status: "
@@ -71,10 +83,10 @@ else
     done
 fi
 
-# 8. ClamAV - Antywirus
+# 9. ClamAV - Antywirus
 CLAMSCAN_RUNNING=$(pgrep -f "clamscan" 2>/dev/null)
 if [ -n "$CLAMSCAN_RUNNING" ]; then
-    echo -e "\n8. ClamAV - Antywirus:"
+    echo -e "\n9. ClamAV - Antywirus:"
     echo "Status: Skanowanie w toku (PID: $CLAMSCAN_RUNNING)"
 
     # Wyświetl poprzednie podsumowanie jeśli istnieje

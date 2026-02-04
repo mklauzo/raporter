@@ -15,12 +15,28 @@
     <table class="table table-hover">
         <thead class="table-dark">
             <tr>
-                <th>Nazwa</th>
-                <th>Adres IP</th>
+                <th>
+                    <a href="{{ url_for('servers.dashboard', sort='name', dir='asc' if sort == 'name' and direction == 'desc' else 'desc') }}" class="text-white text-decoration-none">
+                        Nazwa {% if sort == 'name' %}{{ '▲' if direction == 'asc' else '▼' }}{% endif %}
+                    </a>
+                </th>
+                <th>
+                    <a href="{{ url_for('servers.dashboard', sort='ip_address', dir='asc' if sort == 'ip_address' and direction == 'desc' else 'desc') }}" class="text-white text-decoration-none">
+                        Adres IP {% if sort == 'ip_address' %}{{ '▲' if direction == 'asc' else '▼' }}{% endif %}
+                    </a>
+                </th>
                 <th>SSH User</th>
                 <th>Port</th>
-                <th>Data dodania</th>
-                <th>Ostatni raport</th>
+                <th>
+                    <a href="{{ url_for('servers.dashboard', sort='created_at', dir='asc' if sort == 'created_at' and direction == 'desc' else 'desc') }}" class="text-white text-decoration-none">
+                        Data dodania {% if sort == 'created_at' %}{{ '▲' if direction == 'asc' else '▼' }}{% endif %}
+                    </a>
+                </th>
+                <th>
+                    <a href="{{ url_for('servers.dashboard', sort='last_report', dir='asc' if sort == 'last_report' and direction == 'desc' else 'desc') }}" class="text-white text-decoration-none">
+                        Ostatni raport {% if sort == 'last_report' %}{{ '▲' if direction == 'asc' else '▼' }}{% endif %}
+                    </a>
+                </th>
                 <th class="text-end">Akcje</th>
             </tr>
         </thead>
