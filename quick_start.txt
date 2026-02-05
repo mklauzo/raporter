@@ -19,3 +19,4 @@ Przydatne komendy:
 - Logi: docker-compose logs -f web
 - Stop: docker-compose down
 - Reset bazy: docker-compose down -v
+- klucz shh musi być w formacie open ssh, jeżeli mamy klucz w formacie putty należy za pomocą puttygen.exe zrobić konwersję do openssh
