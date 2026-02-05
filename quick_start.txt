@@ -1,0 +1,21 @@
+Raporter - Quick Start
+======================
+
+1. Sklonuj repozytorium:
+   git clone git@github.com:mklauzo/raporter.git
+   cd raporter
+
+2. Uruchom aplikację:
+   docker-compose up --build -d
+
+3. Otwórz w przeglądarce:
+   http://localhost:5000
+
+4. Zaloguj się:
+   Login: adminek
+   Hasło: adminek123
+
+Przydatne komendy:
+- Logi: docker-compose logs -f web
+- Stop: docker-compose down
+- Reset bazy: docker-compose down -v
