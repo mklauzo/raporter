@@ -13,7 +13,7 @@ Raporter - Quick Start
 
 4. Zaloguj się:
    Login: adminek
-   Hasło: adminek123
+   Hasło: adminek123      po pierwszym logowaniu nalezy zmienić hasło
 
 Przydatne komendy:
 - Logi: docker-compose logs -f web
