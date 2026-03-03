@@ -98,6 +98,7 @@ def edit_server(server_id):
         server.ip_address = ip_address
         server.ssh_user = ssh_user or 'root'
         server.ssh_port = ssh_port
+        server.is_active = request.form.get('is_active') == '1'
         db.session.commit()
 
         flash(f'Serwer "{name}" zostal zaktualizowany', 'success')

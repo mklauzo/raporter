@@ -12,6 +12,9 @@ reports_bp = Blueprint('reports', __name__)
 def generate(server_id):
     server = Server.query.get_or_404(server_id)
 
+    if not server.is_active:
+        return jsonify({'success': False, 'content': 'Serwer jest wylaczony - generowanie raportow jest zablokowane.', 'status': 'error'}), 403
+
     content, status = generate_report(server)
 
     report = Report(

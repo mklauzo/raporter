@@ -36,6 +36,19 @@
                                    value="{{ server.ssh_port if server else 22 }}" min="1" max="65535">
                         </div>
                     </div>
+                    {% if server %}
+                    <div class="mb-3">
+                        <label class="form-label d-block">Status serwera</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="is_active_toggle" {% if server.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active_toggle" id="is_active_label">
+                                {% if server.is_active %}Aktywny — raporty włączone{% else %}Wyłączony — raporty zablokowane{% endif %}
+                            </label>
+                        </div>
+                        <input type="hidden" name="is_active" id="is_active_hidden" value="{{ '1' if server.is_active else '0' }}">
+                    </div>
+                    {% endif %}
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-lg"></i> {% if server %}Zapisz zmiany{% else %}Dodaj serwer{% endif %}
@@ -49,4 +62,24 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if server %}
+<script>
+    const toggle = document.getElementById('is_active_toggle');
+    const hidden = document.getElementById('is_active_hidden');
+    const label = document.getElementById('is_active_label');
+
+    toggle.addEventListener('change', () => {
+        if (toggle.checked) {
+            hidden.value = '1';
+            label.textContent = 'Aktywny \u2014 raporty w\u0142\u0105czone';
+        } else {
+            hidden.value = '0';
+            label.textContent = 'Wy\u0142\u0105czony \u2014 raporty zablokowane';
+        }
+    });
+</script>
+{% endif %}
 {% endblock %}

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS servers (
     ip_address VARCHAR(45) NOT NULL,
     ssh_user VARCHAR(50) DEFAULT 'root',
     ssh_port INT DEFAULT 22,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

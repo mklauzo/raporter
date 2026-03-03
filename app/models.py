@@ -33,6 +33,7 @@ class Server(db.Model):
     ip_address = db.Column(db.String(45), nullable=False)
     ssh_user = db.Column(db.String(50), default='root')
     ssh_port = db.Column(db.Integer, default=22)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     reports = db.relationship('Report', backref='server', lazy=True, cascade='all, delete-orphan')

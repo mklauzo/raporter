@@ -42,8 +42,8 @@
         </thead>
         <tbody>
             {% for server in servers %}
-            <tr>
-                <td><strong>{{ server.name }}</strong></td>
+            <tr{% if not server.is_active %} class="text-muted" style="opacity: 0.5;"{% endif %}>
+                <td><strong>{{ server.name }}</strong>{% if not server.is_active %} <span class="badge bg-secondary ms-1">wyłączony</span>{% endif %}</td>
                 <td><code>{{ server.ip_address }}</code></td>
                 <td>{{ server.ssh_user }}</td>
                 <td>{{ server.ssh_port }}</td>
@@ -58,7 +58,8 @@
                     {% endif %}
                 </td>
                 <td class="text-end">
-                    <button class="btn btn-primary btn-sm" onclick="generateReport({{ server.id }}, '{{ server.name }}')">
+                    <button class="btn btn-primary btn-sm" onclick="generateReport({{ server.id }}, '{{ server.name }}')"
+                            {% if not server.is_active %}disabled title="Serwer jest wyłączony"{% endif %}>
                         <i class="bi bi-file-earmark-text"></i> Raport
                     </button>
                     <a href="{{ url_for('servers.edit_server', server_id=server.id) }}" class="btn btn-warning btn-sm">
