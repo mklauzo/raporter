@@ -33,10 +33,10 @@ def dashboard():
         order_col = Server.created_at
 
     if direction == 'asc':
-        servers = query.order_by(asc(order_col)).all()
+        servers = query.order_by(desc(Server.is_active), asc(order_col)).all()
     else:
         direction = 'desc'
-        servers = query.order_by(desc(order_col)).all()
+        servers = query.order_by(desc(Server.is_active), desc(order_col)).all()
 
     return render_template('dashboard.html', servers=servers, sort=sort, direction=direction)
 
