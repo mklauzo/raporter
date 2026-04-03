@@ -29,6 +29,18 @@ CREATE TABLE IF NOT EXISTS reports (
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
+-- Tabela analiz AI
+CREATE TABLE IF NOT EXISTS analyses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    server_id INT NOT NULL,
+    content TEXT,
+    ai_provider VARCHAR(50),
+    ai_model VARCHAR(100),
+    status ENUM('success', 'error') NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
+);
+
 -- Tabela ustawień
 CREATE TABLE IF NOT EXISTS settings (
     id INT AUTO_INCREMENT PRIMARY KEY,

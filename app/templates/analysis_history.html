@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Historia analiz - Raporter{% endblock %}
+
+{% block content %}
+<h2><i class="bi bi-robot"></i> Historia analiz AI</h2>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <form method="GET" class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label for="server_id" class="col-form-label">Filtruj po serwerze:</label>
+            </div>
+            <div class="col-auto">
+                <select class="form-select" id="server_id" name="server_id" onchange="this.form.submit()">
+                    <option value="">Wszystkie serwery</option>
+                    {% for server in servers %}
+                    <option value="{{ server.id }}" {% if server.id == selected_server_id %}selected{% endif %}>
+                        {{ server.name }} ({{ server.ip_address }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+    <div class="card-body">
+        {% if analyses.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Serwer</th>
+                        <th>IP</th>
+                        <th>Dostawca AI</th>
+                        <th>Model</th>
+                        <th>Status</th>
+                        <th class="text-end">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for analysis in analyses.items %}
+                    <tr>
+                        <td>{{ analysis.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td><strong>{{ analysis.server.name }}</strong></td>
+                        <td><code>{{ analysis.server.ip_address }}</code></td>
+                        <td>
+                            {% if analysis.ai_provider == 'gemini' %}
+                                <i class="bi bi-google"></i> Gemini
+                            {% else %}
+                                <i class="bi bi-cpu"></i> Anthropic
+                            {% endif %}
+                        </td>
+                        <td><small class="text-muted">{{ analysis.ai_model or '—' }}</small></td>
+                        <td>
+                            {% if analysis.status == 'success' %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Sukces</span>
+                            {% else %}
+                            <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Blad</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-primary btn-sm" onclick="viewAnalysis({{ analysis.id }})">
+                                <i class="bi bi-eye"></i> Zobacz
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if analyses.pages > 1 %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if analyses.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('reports.analysis_history', page=analyses.prev_num, server_id=selected_server_id) }}">Poprzednia</a>
+                </li>
+                {% endif %}
+
+                {% for page in analyses.iter_pages() %}
+                    {% if page %}
+                    <li class="page-item {% if page == analyses.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('reports.analysis_history', page=page, server_id=selected_server_id) }}">{{ page }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if analyses.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('reports.analysis_history', page=analyses.next_num, server_id=selected_server_id) }}">Nastepna</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info mb-0">
+            <i class="bi bi-info-circle"></i> Brak analiz w historii.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal podglądu analizy -->
+<div class="modal fade" id="analysisViewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-robot"></i>
+                    <span id="analysisModalTitle">Analiza AI</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="analysisModalContent" class="bg-light p-3 rounded" style="white-space: pre-wrap; word-break: break-word; max-height: 70vh; overflow-y: auto;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="copyAnalysisView()">
+                    <i class="bi bi-clipboard"></i> Kopiuj
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function viewAnalysis(analysisId) {
+    fetch('/analyses/' + analysisId)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('analysisModalTitle').textContent =
+                data.server_name + ' (' + data.server_ip + ') — ' + data.created_at;
+            document.getElementById('analysisModalContent').textContent = data.content;
+            new bootstrap.Modal(document.getElementById('analysisViewModal')).show();
+        });
+}
+
+function copyAnalysisView() {
+    const text = document.getElementById('analysisModalContent').textContent;
+    navigator.clipboard.writeText(text);
+}
+</script>
+{% endblock %}

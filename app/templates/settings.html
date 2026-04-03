@@ -76,6 +76,138 @@
 </div>
 
 <div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-robot"></i> Klucze API dostawcow AI
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Anthropic -->
+                    <div class="col-md-4">
+                        <h6 class="fw-semibold mb-2">
+                            <i class="bi bi-cpu"></i> Anthropic (Claude)
+                            {% if anthropic_key_configured %}
+                                <span class="badge bg-success ms-1"><i class="bi bi-check-circle"></i> Skonfigurowany</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark ms-1"><i class="bi bi-exclamation-circle"></i> Brak klucza</span>
+                            {% endif %}
+                        </h6>
+                        <form method="POST" class="mb-2">
+                            <input type="hidden" name="action" value="save_anthropic_key">
+                            <div class="input-group">
+                                <input type="password" class="form-control form-control-sm" name="anthropic_api_key"
+                                       placeholder="sk-ant-..." autocomplete="off">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-floppy"></i> Zapisz
+                                </button>
+                            </div>
+                        </form>
+                        {% if anthropic_key_configured %}
+                        <form method="POST" onsubmit="return confirm('Usunac klucz Anthropic API?')" class="mb-3">
+                            <input type="hidden" name="action" value="delete_anthropic_key">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> Usun klucz
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="POST">
+                            <input type="hidden" name="action" value="save_anthropic_model">
+                            <label class="form-label form-label-sm mb-1">Model Anthropic</label>
+                            <div class="input-group input-group-sm mb-1">
+                                <select class="form-select form-select-sm" name="anthropic_model" id="anthropic_model_select">
+                                    <option value="{{ anthropic_model }}" selected>{{ anthropic_model }}</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshModels('anthropic')" title="Odśwież listę modeli">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <button type="submit" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-floppy"></i> Zapisz
+                                </button>
+                            </div>
+                            <div class="form-text" id="anthropic_model_status"></div>
+                        </form>
+                    </div>
+
+                    <!-- Gemini -->
+                    <div class="col-md-4">
+                        <h6 class="fw-semibold mb-2">
+                            <i class="bi bi-google"></i> Google Gemini
+                            {% if gemini_key_configured %}
+                                <span class="badge bg-success ms-1"><i class="bi bi-check-circle"></i> Skonfigurowany</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark ms-1"><i class="bi bi-exclamation-circle"></i> Brak klucza</span>
+                            {% endif %}
+                        </h6>
+                        <form method="POST" class="mb-2">
+                            <input type="hidden" name="action" value="save_gemini_key">
+                            <div class="input-group">
+                                <input type="password" class="form-control form-control-sm" name="gemini_api_key"
+                                       placeholder="AIza..." autocomplete="off">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-floppy"></i> Zapisz
+                                </button>
+                            </div>
+                        </form>
+                        {% if gemini_key_configured %}
+                        <form method="POST" onsubmit="return confirm('Usunac klucz Gemini API?')" class="mb-3">
+                            <input type="hidden" name="action" value="delete_gemini_key">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> Usun klucz
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="POST">
+                            <input type="hidden" name="action" value="save_gemini_model">
+                            <label class="form-label form-label-sm mb-1">Model Gemini</label>
+                            <div class="input-group input-group-sm mb-1">
+                                <select class="form-select form-select-sm" name="gemini_model" id="gemini_model_select">
+                                    <option value="{{ gemini_model }}" selected>{{ gemini_model }}</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshModels('gemini')" title="Odśwież listę modeli">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <button type="submit" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-floppy"></i> Zapisz
+                                </button>
+                            </div>
+                            <div class="form-text" id="gemini_model_status"></div>
+                        </form>
+                    </div>
+
+                    <!-- Provider selection -->
+                    <div class="col-md-4">
+                        <h6 class="fw-semibold mb-2"><i class="bi bi-toggles"></i> Aktywny dostawca AI</h6>
+                        <form method="POST">
+                            <input type="hidden" name="action" value="set_ai_provider">
+                            <div class="mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="ai_provider" id="provider_anthropic"
+                                           value="anthropic" {% if ai_provider == 'anthropic' %}checked{% endif %}>
+                                    <label class="form-check-label" for="provider_anthropic">
+                                        Anthropic (Claude)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="ai_provider" id="provider_gemini"
+                                           value="gemini" {% if ai_provider == 'gemini' %}checked{% endif %}>
+                                    <label class="form-check-label" for="provider_gemini">
+                                        Google Gemini
+                                    </label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-secondary">
+                                <i class="bi bi-check-lg"></i> Zapisz wybor
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
@@ -110,4 +242,51 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshModels(provider) {
+    const selectId = provider + '_model_select';
+    const statusId = provider + '_model_status';
+    const select = document.getElementById(selectId);
+    const status = document.getElementById(statusId);
+    const currentVal = select.value;
+
+    const btn = select.closest('.input-group').querySelector('button[onclick]');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    status.textContent = 'Pobieranie listy modeli...';
+    status.className = 'form-text text-muted';
+
+    fetch('/settings/models/' + provider)
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                status.textContent = 'Błąd: ' + data.error;
+                status.className = 'form-text text-danger';
+            } else {
+                select.innerHTML = '';
+                data.models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m;
+                    if (m === currentVal) opt.selected = true;
+                    select.appendChild(opt);
+                });
+                if (!select.value && data.models.length) select.value = data.models[0];
+                status.textContent = 'Załadowano ' + data.models.length + ' modeli.';
+                status.className = 'form-text text-success';
+            }
+        })
+        .catch(e => {
+            status.textContent = 'Błąd połączenia: ' + e;
+            status.className = 'form-text text-danger';
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
+        });
+}
+</script>
 {% endblock %}

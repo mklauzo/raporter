@@ -1,6 +1,7 @@
 import json
+import os
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, Response
+from flask import Blueprint, render_template, redirect, url_for, flash, request, Response, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models import User, Server, Report, Settings
@@ -48,12 +49,80 @@ def logout():
 @auth_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
+    from app.services.crypto import decrypt_data
+
     ssh_key_configured = Settings.get('ssh_private_key') is not None
+    anthropic_key_configured = Settings.get('anthropic_api_key') is not None
+    gemini_key_configured = Settings.get('gemini_api_key') is not None
+    ai_provider = Settings.get('ai_provider') or 'anthropic'
+    gemini_model = Settings.get('gemini_model') or 'gemini-2.0-flash'
+    anthropic_model = Settings.get('anthropic_model') or 'claude-opus-4-6'
 
     if request.method == 'POST':
         action = request.form.get('action')
 
-        if action == 'change_password':
+        if action == 'save_anthropic_key':
+            key_value = request.form.get('anthropic_api_key', '').strip()
+            if not key_value:
+                flash('Podaj klucz Anthropic API', 'error')
+            else:
+                encrypted = encrypt_data(key_value)
+                Settings.set('anthropic_api_key', encrypted)
+                flash('Klucz Anthropic API zostal zapisany', 'success')
+                anthropic_key_configured = True
+
+        elif action == 'delete_anthropic_key':
+            setting = Settings.query.filter_by(key='anthropic_api_key').first()
+            if setting:
+                db.session.delete(setting)
+                db.session.commit()
+                flash('Klucz Anthropic API zostal usuniety', 'success')
+                anthropic_key_configured = False
+
+        elif action == 'save_gemini_key':
+            key_value = request.form.get('gemini_api_key', '').strip()
+            if not key_value:
+                flash('Podaj klucz Gemini API', 'error')
+            else:
+                encrypted = encrypt_data(key_value)
+                Settings.set('gemini_api_key', encrypted)
+                flash('Klucz Gemini API zostal zapisany', 'success')
+                gemini_key_configured = True
+
+        elif action == 'delete_gemini_key':
+            setting = Settings.query.filter_by(key='gemini_api_key').first()
+            if setting:
+                db.session.delete(setting)
+                db.session.commit()
+                flash('Klucz Gemini API zostal usuniety', 'success')
+                gemini_key_configured = False
+
+        elif action == 'save_anthropic_model':
+            model_name = request.form.get('anthropic_model', '').strip()
+            if not model_name:
+                flash('Podaj nazwe modelu Anthropic', 'error')
+            else:
+                Settings.set('anthropic_model', model_name)
+                flash(f'Model Anthropic zmieniony na: {model_name}', 'success')
+                anthropic_model = model_name
+
+        elif action == 'save_gemini_model':
+            model_name = request.form.get('gemini_model', '').strip()
+            if not model_name:
+                flash('Podaj nazwe modelu Gemini', 'error')
+            else:
+                Settings.set('gemini_model', model_name)
+                flash(f'Model Gemini zmieniony na: {model_name}', 'success')
+                gemini_model = model_name
+
+        elif action == 'set_ai_provider':
+            provider = request.form.get('ai_provider')
+            if provider in ('anthropic', 'gemini'):
+                Settings.set('ai_provider', provider)
+                flash('Dostawca AI zostal zmieniony', 'success')
+                ai_provider = provider
+
+        elif action == 'change_password':
             current_password = request.form.get('current_password')
             new_password = request.form.get('new_password')
             confirm_password = request.form.get('confirm_password')
@@ -94,7 +163,59 @@ def settings():
                 flash('Klucz SSH zostal usuniety', 'success')
                 ssh_key_configured = False
 
-    return render_template('settings.html', ssh_key_configured=ssh_key_configured)
+    return render_template('settings.html',
+                           ssh_key_configured=ssh_key_configured,
+                           anthropic_key_configured=anthropic_key_configured,
+                           gemini_key_configured=gemini_key_configured,
+                           ai_provider=ai_provider,
+                           gemini_model=gemini_model,
+                           anthropic_model=anthropic_model)
+
+
+@auth_bp.route('/settings/models/<provider>')
+@login_required
+def list_ai_models(provider):
+    from app.services.crypto import decrypt_data
+
+    if provider == 'gemini':
+        encrypted = Settings.get('gemini_api_key')
+        if not encrypted:
+            return jsonify({'error': 'Brak klucza Gemini API'}), 400
+        try:
+            api_key = decrypt_data(encrypted)
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            models = sorted([
+                m.name.replace('models/', '')
+                for m in genai.list_models()
+                if 'generateContent' in m.supported_generation_methods
+            ])
+            return jsonify({'models': models})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    elif provider == 'anthropic':
+        from app.services.crypto import decrypt_data
+        encrypted = Settings.get('anthropic_api_key')
+        api_key = None
+        if encrypted:
+            try:
+                api_key = decrypt_data(encrypted)
+            except Exception:
+                pass
+        if not api_key:
+            api_key = os.environ.get('ANTHROPIC_API_KEY')
+        if not api_key:
+            return jsonify({'error': 'Brak klucza Anthropic API'}), 400
+        try:
+            import anthropic as ant
+            client = ant.Anthropic(api_key=api_key)
+            models = sorted([m.id for m in client.models.list().data])
+            return jsonify({'models': models})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    return jsonify({'error': 'Nieznany dostawca'}), 400
 
 
 @auth_bp.route('/settings/export')

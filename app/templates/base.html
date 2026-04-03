@@ -31,6 +31,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reports.analysis_history') }}">
+                            <i class="bi bi-robot"></i> Historia analiz
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('auth.settings') }}">
                             <i class="bi bi-gear"></i> Ustawienia
                         </a>
@@ -98,6 +103,37 @@
         </div>
     </div>
 
+    <!-- Analysis Modal -->
+    <div class="modal fade" id="analysisModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-shield-check"></i> Analiza bezpieczeństwa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="analysisLoading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Analizowanie...</span>
+                        </div>
+                        <p class="mt-2">Trwa analiza raportu przez AI...</p>
+                        <p class="text-muted small">To może potrwać kilkadziesiąt sekund.</p>
+                    </div>
+                    <div id="analysisContent" style="display: none;">
+                        <div class="alert" id="analysisStatus"></div>
+                        <pre id="analysisText" class="bg-dark text-light p-3 rounded" style="white-space: pre-wrap; word-wrap: break-word; max-height: 75vh; overflow-y: auto; font-size: 0.85rem;"></pre>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="copyAnalysisBtn" style="display: none;" onclick="copyAnalysis()">
+                        <i class="bi bi-clipboard"></i> Kopiuj
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function copyReport() {
@@ -152,6 +188,59 @@
                 content.style.display = 'block';
                 status.className = 'alert alert-danger';
                 status.textContent = 'Blad polaczenia z serwerem';
+                text.textContent = error.message;
+            });
+        }
+
+        function copyAnalysis() {
+            const text = document.getElementById('analysisText');
+            const btn = document.getElementById('copyAnalysisBtn');
+            navigator.clipboard.writeText(text.textContent).then(() => {
+                btn.innerHTML = '<i class="bi bi-clipboard-check"></i> Skopiowano!';
+                btn.classList.replace('btn-outline-secondary', 'btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="bi bi-clipboard"></i> Kopiuj';
+                    btn.classList.replace('btn-success', 'btn-outline-secondary');
+                }, 2000);
+            });
+        }
+
+        function analyzeServer(serverId, serverName) {
+            const modal = new bootstrap.Modal(document.getElementById('analysisModal'));
+            const loading = document.getElementById('analysisLoading');
+            const content = document.getElementById('analysisContent');
+            const status = document.getElementById('analysisStatus');
+            const text = document.getElementById('analysisText');
+            const copyBtn = document.getElementById('copyAnalysisBtn');
+            copyBtn.style.display = 'none';
+
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            modal.show();
+
+            fetch(`/reports/analyze/${serverId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                if (data.success) {
+                    status.className = 'alert alert-success';
+                    status.textContent = `Analiza serwera "${serverName}" — na podstawie raportu z ${data.report_date}`;
+                } else {
+                    status.className = 'alert alert-danger';
+                    status.textContent = `Błąd analizy: ${data.content.substring(0, 120)}`;
+                }
+                text.textContent = data.content;
+                copyBtn.style.display = '';
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                status.className = 'alert alert-danger';
+                status.textContent = 'Błąd połączenia';
                 text.textContent = error.message;
             });
         }

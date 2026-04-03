@@ -37,6 +37,7 @@ class Server(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     reports = db.relationship('Report', backref='server', lazy=True, cascade='all, delete-orphan')
+    analyses = db.relationship('Analysis', backref='server', lazy=True, cascade='all, delete-orphan')
 
     @property
     def last_report(self):
@@ -51,6 +52,18 @@ class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     server_id = db.Column(db.Integer, db.ForeignKey('servers.id'), nullable=False)
     content = db.Column(db.Text)
+    status = db.Column(db.Enum('success', 'error'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Analysis(db.Model):
+    __tablename__ = 'analyses'
+
+    id = db.Column(db.Integer, primary_key=True)
+    server_id = db.Column(db.Integer, db.ForeignKey('servers.id'), nullable=False)
+    content = db.Column(db.Text)
+    ai_provider = db.Column(db.String(50))
+    ai_model = db.Column(db.String(100))
     status = db.Column(db.Enum('success', 'error'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

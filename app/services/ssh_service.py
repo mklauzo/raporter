@@ -43,18 +43,16 @@ class SSHService:
             timeout=30
         )
 
-    def execute_script(self, script_path):
-        """Upload and execute script on remote server."""
+    def execute_script(self, script_path, remote_name='raport_servera.sh'):
+        """Upload and execute script on remote server, then remove it."""
         if not self.client:
             raise RuntimeError('Nie polaczono z serwerem')
 
-        # Read local script
         with open(script_path, 'r') as f:
             script_content = f.read()
 
-        # Create SFTP session and upload script
         sftp = self.client.open_sftp()
-        remote_script = '/tmp/raport_servera.sh'
+        remote_script = f'/tmp/{remote_name}'
 
         with sftp.file(remote_script, 'w') as remote_file:
             remote_file.write(script_content)
@@ -62,12 +60,10 @@ class SSHService:
         sftp.chmod(remote_script, 0o755)
         sftp.close()
 
-        # Execute script
         stdin, stdout, stderr = self.client.exec_command(f'bash {remote_script}', timeout=120)
         output = stdout.read().decode('utf-8')
         error = stderr.read().decode('utf-8')
 
-        # Clean up
         self.client.exec_command(f'rm -f {remote_script}')
 
         if error and not output:
@@ -97,3 +93,13 @@ def generate_report(server, script_path='/app/raport_servera.sh'):
             return output, 'success'
     except Exception as e:
         return str(e), 'error'
+
+
+def run_diagnostics(server, script_path='/app/diagnostics_servera.sh'):
+    """Run extended read-only diagnostics on a server. Returns (output, success_bool)."""
+    try:
+        with SSHService(server.ip_address, server.ssh_user, server.ssh_port) as ssh:
+            output = ssh.execute_script(script_path, remote_name='diagnostics_servera.sh')
+            return output, True
+    except Exception as e:
+        return f'Diagnostyka niedostępna: {str(e)}', False
