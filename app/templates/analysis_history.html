@@ -63,6 +63,9 @@
                             <button class="btn btn-primary btn-sm" onclick="viewAnalysis({{ analysis.id }})">
                                 <i class="bi bi-eye"></i> Zobacz
                             </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="downloadAnalysis({{ analysis.id }})">
+                                <i class="bi bi-file-earmark-markdown"></i> .md
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -121,8 +124,11 @@
                 <pre id="analysisModalContent" class="bg-light p-3 rounded" style="white-space: pre-wrap; word-break: break-word; max-height: 70vh; overflow-y: auto;"></pre>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="copyAnalysisView()">
+                <button type="button" class="btn btn-outline-secondary" id="copyAnalysisViewBtn" onclick="copyAnalysisView()">
                     <i class="bi bi-clipboard"></i> Kopiuj
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="downloadAnalysisViewBtn" onclick="downloadAnalysisView()">
+                    <i class="bi bi-file-earmark-markdown"></i> Pobierz .md
                 </button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
             </div>
@@ -133,10 +139,13 @@
 
 {% block scripts %}
 <script>
+let _currentAnalysis = null;
+
 function viewAnalysis(analysisId) {
     fetch('/analyses/' + analysisId)
         .then(r => r.json())
         .then(data => {
+            _currentAnalysis = data;
             document.getElementById('analysisModalTitle').textContent =
                 data.server_name + ' (' + data.server_ip + ') — ' + data.created_at;
             document.getElementById('analysisModalContent').textContent = data.content;
@@ -144,9 +153,31 @@ function viewAnalysis(analysisId) {
         });
 }
 
+function downloadAnalysis(analysisId) {
+    fetch('/analyses/' + analysisId)
+        .then(r => r.json())
+        .then(data => triggerDownload(data));
+}
+
+function downloadAnalysisView() {
+    if (_currentAnalysis) triggerDownload(_currentAnalysis);
+}
+
+function triggerDownload(data) {
+    const filename = `analiza_${data.server_name}_${data.created_at.replace(/[: ]/g, '-')}.md`;
+    const blob = new Blob([data.content], {type: 'text/markdown'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 function copyAnalysisView() {
     const text = document.getElementById('analysisModalContent').textContent;
-    navigator.clipboard.writeText(text);
+    const btn = document.getElementById('copyAnalysisViewBtn');
+    copyToClipboard(text, btn, '<i class="bi bi-clipboard"></i> Kopiuj');
 }
 </script>
 {% endblock %}
